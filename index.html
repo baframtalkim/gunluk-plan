@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Günlük Plan Asistanı</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Source+Serif+4:wght@400;600&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+<style>
+:root{--bg:#eef1f6;--ink:#14213d;--mut:#5d6985;--ln:#d5dbe7;--ac:#2f5bea;--rd:#c93c3c;--sf:#fff;--f:'Bricolage Grotesque',system-ui,sans-serif;--s:'Source Serif 4',Georgia,serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f)}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.rail{background:var(--ink);color:#e8ecf6;padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+.rail h1{font-size:17px;margin:0 6px 14px;font-weight:700}
+.rail button{all:unset;cursor:pointer;padding:9px 10px;border-radius:7px;color:#b9c3dc}
+.rail button:hover{background:#ffffff14}.rail button.on{background:#fff;color:var(--ink);font-weight:700}
+.rail button:focus-visible{outline:2px solid #8fb0ff}.rail hr{border:0;border-top:1px solid #ffffff22;margin:10px 0;width:100%}
+main{padding:22px clamp(14px,3vw,34px);min-width:0}
+h2{margin:0;font-size:24px}.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.top .sp{flex:1}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--ln);margin-bottom:18px}
+.tabs button{all:unset;cursor:pointer;padding:9px 14px;color:var(--mut);border-bottom:3px solid transparent}
+.tabs button.on{color:var(--ink);border-color:var(--ac);font-weight:700}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:16px;margin-bottom:14px}
+.btn{cursor:pointer;border:1px solid var(--ln);background:var(--sf);border-radius:8px;padding:7px 13px;display:inline-block}
+.btn:hover{border-color:var(--ac)}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}.btn.d{color:var(--rd)}.btn:disabled{opacity:.5;cursor:wait}
+input[type=text],input[type=date],select,textarea{width:100%;border:1px solid var(--ln);border-radius:8px;padding:8px 10px;background:#fff}
+textarea{min-height:90px;resize:vertical}label.f{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mut{color:var(--mut);font-size:13px}
+.week{display:flex;align-items:baseline;gap:12px;margin:6px 0 12px}.week b{font-size:64px;line-height:1;letter-spacing:-2px}.week span{color:var(--mut)}
+.warn{color:var(--rd);font-size:13px}.item{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--ln)}.item:first-child{border-top:0}
+.viewer{overflow:auto;background:#cfd6e4;padding:16px;border-radius:10px}
+.ttg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px}.ttg .card{margin:0}.ttg select{padding:6px}
+.host{position:absolute;left:0;top:0;z-index:-1;width:210mm;background:#fff}.host .page{margin:0}
+.page{width:210mm;height:297mm;padding:0 14mm 10mm;margin:0 auto 14px;background:#fff;color:#1b2333;font:10pt/1.4 var(--s);overflow:hidden;box-sizing:border-box;break-after:page;display:flex;flex-direction:column}
+.page .bar{flex:none;height:5mm;margin:0 -14mm 7mm;background:linear-gradient(90deg,#14213d,#2f5bea)}
+.page .sh{flex:none;text-align:center;padding-bottom:5px;margin-bottom:8px;border-bottom:1.2px solid #14213d}
+.page .sn{font:700 13.5pt/1.25 var(--f);color:#14213d;letter-spacing:.4px;text-transform:uppercase}
+.page .st{font:600 8pt var(--f);letter-spacing:3px;color:#2f5bea;margin:3px 0 4px}
+.page .sm{font:500 9pt/1.4 var(--f);color:#4a5670}
+.page .pc{flex:1;min-height:0;overflow:hidden;font-size:10pt}
+.page table{width:100%;border-collapse:collapse;margin:5px 0;font-size:inherit}
+.page td,.page th{border:1px solid #c5cddf;padding:.32em .55em;vertical-align:top;text-align:left}
+.page th{background:#edf1fa;color:#14213d;font-family:var(--f);font-weight:600}
+.page h1,.page h2,.page h3{margin:.4em 0 .25em;font-family:var(--f);color:#14213d}.page h1{font-size:1.4em;text-align:center}.page h2{font-size:1.2em}.page h3{font-size:1.1em}
+.page ul,.page ol{margin:.3em 0;padding-left:1.4em}.page p{margin:.3em 0}
+.page .sig{flex:none;display:flex;justify-content:space-between;gap:10mm;padding-top:3mm}
+.page .sc{width:46%;text-align:center}.page .sp{height:12mm}.page .sl{border-top:1px solid #14213d;margin:0 10%}
+.page .nm{display:block;font:700 10pt var(--f);color:#14213d;margin-top:3px}.page .ti{font:400 8.5pt var(--f);color:#4a5670}
+.page .pc.t9{font-size:9pt}
+.ty{font-family:Roboto,system-ui,Arial,sans-serif;line-height:1.35;color:#1e293b}
+.ty .sec{border:1px solid #cbd5e1;border-radius:4px;margin-bottom:.65em;overflow:hidden}
+.ty .sb{background:linear-gradient(90deg,#1e3a8a,#2f6fea);color:#fff;font-weight:700;font-size:.95em;letter-spacing:.2px;padding:.32em .7em;text-transform:uppercase}
+.ty .sbody{padding:.45em .7em}
+.ty .r2{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+.ty .lb{color:#1e3a8a;font-weight:700;margin-top:.15em}
+.ty .kv b,.ty .ps b,.ty .lo b{color:#1e3a8a}
+.ty .chips{display:flex;flex-wrap:wrap;gap:.3em;margin:.2em 0 .4em}
+.ty .chip{font-weight:600;font-size:.92em;padding:.1em .5em;border-radius:3px;border:1px solid}
+.ty .c1{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}.ty .c2{background:#d1fae5;color:#047857;border-color:#a7f3d0}.ty .c3{background:#fef3c7;color:#b45309;border-color:#fde68a}.ty .c4{background:#f3e8ff;color:#6b21a8;border-color:#e9d5ff}
+.ty .lo{background:#e2e8f0;color:#1e3a8a;font-weight:700;padding:.4em .6em;border-radius:3px;margin-bottom:.4em}
+.ty .cd{border:1px solid #e2e8f0;border-left:3px solid #1e3a8a;border-radius:3px;padding:.3em .6em;margin:.4em 0}
+.ty .cd h4{margin:0 0 .15em;color:#1e3a8a;font-size:1em;font-family:inherit}.ty .cd p{margin:0}
+.ty .dv{border:1px solid #cbd5e1;border-radius:4px;padding:.4em .6em}
+.ty .dv h4{margin:0 0 .25em;padding-bottom:.2em;border-bottom:2px solid;font-size:.95em;font-family:inherit}.ty .dv p{margin:0}
+.ty .dv.z h4{color:#047857;border-color:#6ee7b7}.ty .dv.s h4{color:#b45309;border-color:#fcd34d}
+.ty p{margin:.2em 0}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;display:none;max-width:90vw;z-index:9}
+@media(max-width:760px){.app{grid-template-columns:1fr}.rail{flex-direction:row;overflow-x:auto;align-items:center}.rail h1{display:none}.rail hr{display:none}.rail button{white-space:nowrap}}
+</style></head><body>
+<div class="app"><nav class="rail" id="rail"></nav><main id="main"></main></div><div id="toast"></div>
+<script>
+/* ============ MİMARİ (Kotlin'e çevirme haritası) ============
+ Domain modelleri  : Settings, ApiKey, Grade, Plan            -> Kotlin data class
+ Repo              : load()/save()                            -> Room / DataStore arayüzü
+ KeyPool           : order()                                  -> ayrı sınıf (en az token önce)
+ WeekService       : of(date)                                 -> saf fonksiyon (java.time)
+ DocReader         : read(file)                               -> PdfRenderer/PDFBox + docx (POI)
+ GeminiClient      : gemini(prompt)                           -> Retrofit/Ktor
+ PlanService       : generate(grade,date)                     -> UseCase
+ Exporter          : toPdf / toDocx                           -> PdfDocument / POI
+ UI                : render*()                                -> Jetpack Compose ekranları
+ Not: Domain/servis katmanları DOM'a bağlı değildir; sadece UI ve Exporter tarayıcıya özeldir. */
+
+const $=s=>document.querySelector(s),uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fmt=d=>String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+const DAYS=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',4500)}
+
+/* ---- Repo ---- */
+/* Android uygulamasında (WebView) veriler telefondaki dosyalara yazılır; tarayıcıda localStorage kullanılır */
+const AND=window.Android||null;
+const Repo={k:'gpa.v1',load(){try{const t=AND?AND.read('state.json'):localStorage.getItem(this.k);return t?JSON.parse(t):null}catch(e){return null}},
+ save(s){try{if(AND){if(!AND.write('state.json',JSON.stringify(s)))throw 0}else localStorage.setItem(this.k,JSON.stringify(s))}catch(e){toast('Kayıt yapılamadı: depolama alanı dolu veya erişilemiyor.')}}};
+let S=Repo.load()||{settings:{},keys:[],grades:[]};
+S.settings=Object.assign({school:'',teacher:'',teacherTitle:'',principal:'',principalTitle:'Okul Müdürü',fmt:'tymm',start:'',end:'',b1:'',sem:'',b2:'',model:'gemini-3.8-flash'},S.settings);
+S.grades.forEach(g=>{g.sections=g.sections||[]});
+const save=()=>Repo.save(S);
+let UI={gid:null,tab:'uret',date:iso(new Date()),view:null,busy:false,err:''};
+let STAGE='';
+const G=()=>S.grades.find(g=>g.id===UI.gid);
+
+/* ---- KeyPool: en az token kullanan anahtar önce ---- */
+const Pool={order(){const t=iso(new Date());S.keys.forEach(k=>{if(k.day!==t){k.day=t;k.tokens=0}});
+ return S.keys.filter(k=>k.on!==false&&(k.cool||0)<Date.now()).sort((a,b)=>a.tokens-b.tokens)}};
+
+/* ---- GeminiClient ---- */
+const FALLBACK=['gemini-3.8-flash','gemini-flash-latest','gemini-flash-lite-latest'];
+async function geminiOnce(prompt,model,files,json){
+ const order=Pool.order();
+ if(!order.length)throw new Error('Kullanılabilir API anahtarı yok. Ayarlar bölümünden anahtar ekleyin.');
+ let last='',fails=0;
+ for(const k of order){
+  try{
+   const ac=new AbortController(),to=setTimeout(()=>ac.abort(),180000);
+   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{method:'POST',signal:ac.signal,
+    headers:{'Content-Type':'application/json','x-goog-api-key':k.key},
+    body:JSON.stringify({contents:[{role:'user',parts:[...(files||[]).map(f=>({inlineData:{mimeType:f.mime,data:f.data}})),{text:prompt}]}],generationConfig:{maxOutputTokens:16000,...(json?{responseMimeType:'application/json'}:{})}})});
+   const j=await r.json();clearTimeout(to);
+   if(r.ok){k.tokens+=j.usageMetadata?.totalTokenCount||0;k.last='Çalıştı';save();
+    const t=(j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');if(t)return t;last='Boş yanıt';continue}
+   const msg=j.error?.message||String(r.status);last=msg;
+   if(r.status===404||/no longer available|deprecated/i.test(msg)){const er=new Error(msg);er.model=true;throw er}
+   if(r.status===429){k.cool=Date.now()+5*60000;k.last='Kota doldu'}
+   else if(r.status===403||/api key/i.test(msg)){k.cool=Date.now()+3600000;k.last='Geçersiz/yetkisiz'}
+   else if(r.status>=500){k.last='Sunucu hatası '+r.status+': '+msg.slice(0,90);if(++fails>=2){const er=new Error('Google sunucu hatası ('+r.status+'): '+msg.slice(0,200));er.model=true;last=er.message;throw er}}
+   else throw new Error(msg);
+   save();
+  }catch(e){if(e.name==='AbortError')throw new Error('Zaman aşımı: Gemini 3 dakika içinde yanıt vermedi. Tekrar deneyin, kitap seçeneğini kapatın veya Ayarlardan başka model seçin.');if(e.message===last)throw e;last=e.message}
+ }
+ throw new Error('Tüm anahtarlar denendi: '+last);
+}
+/* Model kullanımdan kalktıysa otomatik olarak sıradaki modeli dener */
+async function gemini(prompt,files,json){
+ const tried=new Set();let m=S.settings.model;
+ for(;;){
+  try{const out=await geminiOnce(prompt,m,files,json);if(m!==S.settings.model){S.settings.model=m;save()}return out}
+  catch(e){if(!e.model)throw e;tried.add(m);
+   const next=[...(S.models||[]),...FALLBACK].find(x=>!tried.has(x));
+   if(!next)throw new Error('Hiçbir model kullanılamadı. Ayarlar > Kullanılabilir modelleri getir düğmesini deneyin. ('+e.message+')');
+   m=next;toast('Model deneniyor: '+m)}
+ }
+}
+
+/* ---- WeekService ---- */
+const Week={
+ monday(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x},
+ breaks(){const t=S.settings;return[[t.b1,7],[t.sem,14],[t.b2,7]].filter(x=>x[0]).map(([d,n])=>{const a=new Date(d+'T00:00'),b=new Date(a);b.setDate(b.getDate()+n-1);b.setHours(23,59);return[a,b]})},
+ work(d,br){const t=S.settings,s=new Date(t.start+'T00:00'),e=t.end?new Date(t.end+'T23:59'):null;
+  return d.getDay()%6!==0&&d>=s&&(!e||d<=e)&&!br.some(([a,b])=>d>=a&&d<=b)},
+ of(date){if(!S.settings.start)return null;const br=this.breaks(),s=this.monday(new Date(S.settings.start+'T00:00')),t=this.monday(new Date(date+'T00:00'));
+  const wk=m=>[...Array(5)].map((_,i)=>{const d=new Date(m);d.setDate(d.getDate()+i);return d});
+  const days=wk(t),work=days.filter(d=>this.work(d,br));
+  if(t<s)return{no:0,days,work};let n=0;for(let m=new Date(s);m<=t;m.setDate(m.getDate()+7))if(wk(m).some(d=>this.work(d,br)))n++;
+  return{no:n,days,work,brk:!work.length}}
+};
+const sf=(k,l,h)=>`<div><label class="f">${l}</label><input type="date" data-s="${k}" value="${S.settings[k]||''}" style="width:auto">${h?` <span class="mut">${h}</span>`:''}</div>`;
+const endOf=(k,n)=>{const v=S.settings[k];if(!v)return'';const d=new Date(v+'T00:00');d.setDate(d.getDate()+n-1);return'bitiş: '+fmt(d)};
+
+/* ---- DocReader ---- */
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function readDoc(f){
+ const buf=await f.arrayBuffer();
+ if(/\.docx$/i.test(f.name))return(await mammoth.extractRawText({arrayBuffer:buf})).value;
+ if(/\.pdf$/i.test(f.name)){const pdf=await pdfjsLib.getDocument({data:buf}).promise;let out='';
+  for(let i=1;i<=pdf.numPages;i++){const c=await(await pdf.getPage(i)).getTextContent();let y=null;
+   c.items.forEach(it=>{const yy=it.transform[5];if(y!==null&&Math.abs(yy-y)>4)out+='\n';else if(y!==null)out+=' ';out+=it.str;y=yy});out+='\n\n'}
+  return out}
+ throw new Error('Yalnızca PDF veya DOCX yükleyin.');
+}
+
+/* ---- Ders kitabı deposu (IndexedDB) ---- */
+const Books={mem:{},db:null,open(){return this.db||(this.db=new Promise((ok,no)=>{try{const r=indexedDB.open('gpa-books',1);r.onupgradeneeded=()=>r.result.createObjectStore('b');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}}))},
+ async tx(m,fn){const db=await this.open();return new Promise((ok,no)=>{const t=db.transaction('b',m),q=fn(t.objectStore('b'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})},
+ /* Önce IndexedDB, olmazsa localStorage, o da olmazsa yalnızca bellek */
+ async get(id){if(AND){const t=AND.read('book-'+id+'.json');return t?JSON.parse(t):undefined}try{const v=await this.tx('readonly',x=>x.get(id));if(v)return v}catch(e){}
+  try{const v=localStorage.getItem('gpa-book-'+id);if(v)return JSON.parse(v)}catch(e){}
+  return this.mem[id]},
+ async set(id,v){if(AND){if(AND.write('book-'+id+'.json',JSON.stringify(v)))return 'file';throw new Error('Kitap dosyaya yazılamadı.')}try{await this.tx('readwrite',x=>x.put(v,id));return 'idb'}catch(e){}
+  try{localStorage.setItem('gpa-book-'+id,JSON.stringify(v));return 'ls'}catch(e){}
+  this.mem[id]=v;return 'mem'},
+ async del(id){if(AND)AND.remove('book-'+id+'.json');delete this.mem[id];try{localStorage.removeItem('gpa-book-'+id)}catch(e){}try{await this.tx('readwrite',x=>x.delete(id))}catch(e){}}};
+async function pdfPages(f,cb){const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,out=[];
+ for(let i=1;i<=pdf.numPages;i++){const c=await(await pdf.getPage(i)).getTextContent();let y=null,t='';
+  c.items.forEach(it=>{const yy=it.transform[5];if(y!==null&&Math.abs(yy-y)>4)t+='\n';else if(y!==null)t+=' ';t+=it.str;y=yy});
+  out.push(t);if(cb&&i%10===0)cb(i,pdf.numPages)}return out}
+/* Anahtar kelimelere göre en uygun ardışık sayfaları bulur */
+const norm=t=>t.toLocaleLowerCase('tr').replace(/[^a-zçğıöşü0-9 ]/g,' ');
+function pickBook(pages,kw,win=6,cap=14000){
+ const words=[...new Set(kw.flatMap(k=>norm(k).split(/\s+/)).filter(w=>w.length>3))],ph=kw.map(k=>norm(k).trim()).filter(k=>k.includes(' '));
+ const sc=pages.map(p=>{const t=norm(p);let n=0;words.forEach(w=>{n+=t.split(w).length-1});ph.forEach(f=>{n+=3*(t.split(f).length-1)});return n});
+ let best=0,bi=-1;for(let i=0;i<pages.length;i++){let n=0;for(let j=i;j<Math.min(i+win,pages.length);j++)n+=sc[j];if(n>best){best=n;bi=i}}
+ if(bi<0)return null;let txt='',end=bi;
+ for(let j=bi;j<Math.min(bi+win,pages.length);j++){if(txt.length+pages[j].length>cap)break;txt+=`\n[Sayfa ${j+1}]\n`+pages[j];end=j}
+ return{from:bi+1,to:end+1,text:txt}}
+const tf=(k,l,ph)=>`<label class="f">${l}</label><input type="text" data-s="${k}" value="${esc(S.settings[k])}" placeholder="${ph||''}">`;
+
+/* ---- PlanService ---- */
+const clean=h=>{const d=new DOMParser().parseFromString(h,'text/html');d.querySelectorAll('script,iframe,object,embed,link,style').forEach(e=>e.remove());
+ d.querySelectorAll('*').forEach(e=>[...e.attributes].forEach(a=>/^on/i.test(a.name)&&e.removeAttribute(a.name)));return d.body.innerHTML};
+/* ---- Ders programı yardımcıları ---- */
+const slotTxt=a=>{if(!a||!a.length)return'';const c=a.every((v,i)=>!i||v===a[i-1]+1);return c?(a.length>1?a[0]+'-'+a[a.length-1]:a[0])+'. ders':a.join(' ve ')+'. ders'};
+/* Haftanın plan birimleri: her şube için yalnızca o şubenin ders günleri.
+   Ders programı girilmemişse tek birim (tüm iş günleri). */
+function unitsFor(g,w){
+ if(!hasSched(g))return[{sec:null,days:w.work,hrs:w.work.map(()=>0),slots:w.work.map(()=>null),sig:'tum'}];
+ const us=[];
+ g.sections.filter(x=>x.name).forEach(sec=>{
+  const ds=w.work.filter(d=>+((sec.sched||{})[d.getDay()-1]||0)>0);
+  if(!ds.length)return;
+  const hrs=ds.map(d=>+sec.sched[d.getDay()-1]);
+  us.push({sec,days:ds,hrs,slots:ds.map(d=>S.tt&&!S.tt.mig?((sec.slots||{})[d.getDay()-1]||null):null),sig:hrs.join(',')})});
+ return us}
+const sigHTML=()=>{const t=S.settings,c=(n,ti)=>`<div class="sc"><div class="sp"></div><div class="sl"></div><b class="nm">${esc(n)}</b><div class="ti">${esc(ti)}</div></div>`;
+ return`<div class="sig">${c(t.teacher,t.teacherTitle||'Öğretmen')}${c(t.principal,t.principalTitle||'Okul Müdürü')}</div>`};
+const hdrHTML=(meta)=>`<div class="bar"></div><div class="sh">${S.settings.school?`<div class="sn">${esc(S.settings.school)}</div>`:''}<div class="st">GÜNLÜK DERS PLANI</div><div class="sm">${meta}</div></div>`;
+/* Eski sürümde üretilmiş planları da yeni tasarıma ve güncel imza bilgisine çevirir */
+function upgradeHtml(html){const d=new DOMParser().parseFromString(html,'text/html');
+ d.querySelectorAll('.page').forEach(p=>{
+  if(!p.querySelector('.bar'))p.insertAdjacentHTML('afterbegin','<div class="bar"></div>');
+  const sh=p.querySelector('.sh');if(sh&&!sh.querySelector('.st')){const sm=sh.querySelector('.sm');if(sm)sm.insertAdjacentHTML('beforebegin','<div class="st">GÜNLÜK DERS PLANI</div>')}
+  if(sh){const sn=sh.querySelector('.sn');if(sn)sn.textContent=S.settings.school||sn.textContent}
+  const old=p.querySelector('.sig');if(old)old.remove();p.insertAdjacentHTML('beforeend',sigHTML())});
+ return d.body.innerHTML}
+function decorate(h,g,w,u){
+ const d=new DOMParser().parseFromString(h,'text/html'),secs=g.sections.filter(x=>x.name),ld=u.days;
+ d.querySelectorAll('section').forEach((x,i)=>{const k=Math.min(i,ld.length-1),dt=ld[k];
+  let sub='';
+  if(u.sec)sub=` · ${u.hrs[k]} ders saati${u.slots[k]?' ('+slotTxt(u.slots[k])+')':''}`;
+  else if(secs.length)sub=` · ${secs.map(y=>`${esc(y.name)}: ${wk(y)} saat/hafta`).join(', ')}`;
+  const meta=`${esc(g.name)}${u.sec?' · '+esc(u.sec.name):''} · ${DAYS[dt.getDay()]} ${fmt(dt)} · ${w.no}. hafta${sub}`;
+  const isT=!!x.querySelector('.ty');x.className='page';x.innerHTML=hdrHTML(meta)+'<div class="pc'+(isT?' t9':'')+'">'+x.innerHTML+'</div>'+sigHTML()});
+ return d.body.innerHTML}
+const TURLER=['icerik','kazanim','konu','tarih','gun','ders_saati','diger'];
+async function getTemplate(g){
+ const sm=g.sample;if(sm.tpl)return sm.tpl;
+ if(!sm.html&&!sm.b64)return null;
+ STAGE='Örnek plan şablonu çıkarılıyor…';
+ const files=[];if(!sm.html&&sm.b64)files.push({mime:'application/pdf',data:sm.b64});
+ const src=sm.html?`ÖRNEK PLAN HTML:\n"""${sm.html.slice(0,30000)}"""`:`ÖRNEK PLAN METNİ (ekli PDF'e de bak):\n"""${sm.text.slice(0,15000)}"""`;
+ const r=await gemini(`Aşağıda bir öğretmenin günlük ders planı örneği var. Bunu doldurulabilir bir ŞABLONA çevir.
+KURALLAR: 1) Tablolar, satır/sütunlar, başlıklar, etiketler ("Tarih", "İçerik", "Kazanım" vb.), kalın/italik düzen AYNEN kalsın; hiçbir bölümü silme, ekleme veya sıra değiştirme. 2) Her günde değişecek değerleri {{ALAN_1}}, {{ALAN_2}}... yer tutucularıyla değiştir (örnekteki gerçek metni sil, yerine yer tutucu koy). Her etiketli bölüm için en az bir yer tutucu olsun. 3) Okul adı başlığını ve öğretmen/müdür imza-onay bloğunu şablondan ÇIKAR (otomatik eklenecek). 4) Yalnızca JSON döndür: {"html":"şablon HTML","alanlar":[{"anahtar":"ALAN_1","etiket":"alanın etiketi","tur":"icerik|kazanim|konu|tarih|gun|ders_saati|diger","ipucu":"örnekteki değer"}]}
+"tur": dersin içeriğini/işlenişini anlatan bölüm (örn. "İçerik") icerik; kazanım/öğrenme çıktısı kazanim; konu/ünite konu; tarih tarih; gün adı gun; ders saati/süre ders_saati; diğerleri diger.
+${src}`,files,true);
+ let j=null;try{j=JSON.parse(r.match(/\{[\s\S]*\}/)[0])}catch(e){}
+ if(!j||!j.html||!Array.isArray(j.alanlar)||!j.alanlar.length||!/\{\{/.test(j.html))return null;
+ sm.tpl={html:clean(j.html),alanlar:j.alanlar.map(a=>({k:String(a.anahtar),etiket:String(a.etiket||a.anahtar),tur:TURLER.includes(a.tur)?a.tur:'diger',ipucu:String(a.ipucu||'').slice(0,200)}))};
+ save();return sm.tpl;
+}
+/* ---- TYMM biçimi (referans belge): yapay zeka yapılandırılmış JSON üretir, görünümü uygulama çizer ---- */
+const arr=v=>Array.isArray(v)?v.filter(Boolean).map(String):(v?[String(v)]:[]);
+const rich=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+const chipsH=(a,c)=>a.length?`<div class="chips">${a.map(x=>`<span class="chip ${c}">${esc(x)}</span>`).join('')}</div>`:'';
+function tymmHTML(o,u,i){const d=u.days[i];
+ const sure=(u.sec?u.hrs[i]+' Ders Saati'+(u.slots[i]?' ('+slotTxt(u.slots[i])+')':'')+' · ':'')+DAYS[d.getDay()]+' '+fmt(d);
+ const kv=(l,v)=>v?`<div class="kv"><b>${l}</b> ${rich(v)}</div>`:'';
+ const grp=(l,a,c)=>a.length?`<div class="lb">${l}</div>${chipsH(a,c)}`:'';
+ const left=grp('Alan Becerileri:',arr(o.alanBecerileri),'c1')+grp('Kavramsal Beceriler:',arr(o.kavramsalBeceriler),'c2')+(o.disiplinlerArasi?`<div class="kv"><b>Disiplinler Arası:</b> ${rich(String(o.disiplinlerArasi))}</div>`:'');
+ const right=grp('Eğilimler:',arr(o.egilimler),'c3')+grp('Programlar Arası Bileşenler:',arr(o.programlarArasi),'c4');
+ const steps=arr(o.surecAdimlari);
+ const cd=(t,v)=>v?`<div class="cd"><h4>${t}</h4><p>${rich(String(v))}</p></div>`:'';
+ return`<div class="ty">
+<div class="sec"><div class="sb">1. BÖLÜM: DERS VE KAPSAM BİLGİLERİ</div><div class="sbody"><div class="r2"><div class="kv"><b>ÜNİTE / TEMA:</b> ${rich(String(o.uniteTema||''))}</div><div class="kv"><b>ÖNERİLEN SÜRE:</b> ${esc(sure)}</div></div>${kv('ÜNİTE AÇIKLAMASI:',o.uniteAciklamasi)}${kv('İÇERİK ÇERÇEVESİ:',o.icerikCercevesi)}</div></div>
+<div class="sec"><div class="sb">2. BÖLÜM: PROGRAM BİLEŞENLERİ VE BECERİLER</div><div class="sbody"><div class="r2"><div>${left}</div><div>${right}</div></div></div></div>
+<div class="sec"><div class="sb">3. BÖLÜM: ÖĞRENME-ÖĞRETME YAŞANTILARI VE SÜREÇ</div><div class="sbody">${o.ogrenmeCiktisi?`<div class="lo"><b>ÖĞRENME ÇIKTISI:</b> ${rich(String(o.ogrenmeCiktisi))}</div>`:''}${steps.length?`<div class="ps"><b>Süreç Adımları:</b> ${steps.map(rich).join('<br>')}</div>`:''}${cd('1. Ön Değerlendirme Süreci',o.onDegerlendirme)}${cd('2. Köprü Kurma',o.kopruKurma)}${cd('3. Öğrenme-Öğretme Uygulamaları',o.uygulamalar)}${kv('Anahtar Kavramlar:',o.anahtarKavramlar)}</div></div>
+<div class="sec"><div class="sb">4. BÖLÜM: FARKLILAŞTIRILMIŞ EĞİTİM</div><div class="sbody"><div class="r2"><div class="dv z"><h4>ZENGİNLEŞTİRME</h4><p>${rich(String(o.zenginlestirme||''))}</p></div><div class="dv s"><h4>DESTEKLEME</h4><p>${rich(String(o.destekleme||''))}</p></div></div></div></div>
+<div class="sec"><div class="sb">5. BÖLÜM: ÖĞRENME KANITLARI (ÖLÇME VE DEĞERLENDİRME)</div><div class="sbody"><p>${rich(String(o.olcme||''))}</p></div></div>
+</div>`}
+async function tymmDays(g,w,gr,u0,names,annual,book,note){
+ STAGE=(u0.sec?names+' için ':'')+'TYMM planı yazılıyor…';
+ const dayDesc=u0.sec?u0.days.map((d,i)=>`${i+1}. ders günü (${u0.hrs[i]} ders saati)`).join(', '):u0.days.map(d=>`${DAYS[d.getDay()]} ${fmt(d)}`).join(', ');
+ const share=u0.sec?`Bu içerik ${names} şube(ler)inde aynen kullanılacak; bu yüzden metinlere tarih, gün adı veya şube adı YAZMA. `:'';
+ const tp=`Sen Türkiye'de Türkiye Yüzyılı Maarif Modeli (TYMM) kapsamında öğretmenlere günlük ders planı hazırlayan bir asistansın.
+Sınıf/Ders: ${g.name}. Okulda ${w.no}. hafta. Plan yazılacak ders günleri: ${dayDesc}. ${share}Günlük içeriği o günkü ders saatine göre ayarla; haftanın konusunu yalnızca bu ders günlerine mantıklı biçimde dağıt.
+YILLIK PLAN:
+"""${annual}"""${book}
+${note?'ÖĞRETMEN NOTU: '+note:''}
+Her ders günü için aşağıdaki alanları içeren bir nesne üret. Yıllık planda ünite/tema, öğrenme çıktısı (kodlarıyla), alan becerileri, kavramsal beceriler, eğilimler, programlar arası bileşenler ve disiplinler arası ilişkiler varsa AYNEN (kodlarıyla) kullan; yoksa dersin TYMM programına uygun olanları yaz. Ders kitabı bölümü verildiyse içeriği ondan kendi cümlelerinle özetle ve sayfa aralığını içerikÇerçevesi'ne yaz. Hiçbir alanı boş bırakma; her gün birbirinden farklı ve eksiksiz olsun. Vurgu için **kalın** kullanabilirsin.
+ALANLAR:
+- uniteTema: ünite/tema adı (örn. "Etkileşim (Ünite 1)")
+- uniteAciklamasi: ünite açıklaması / konu başlığı
+- icerikCercevesi: bu günün içerik çerçevesi (kitap sayfası varsa "Ders Kitabı s. X–Y")
+- alanBecerileri: dizi, her öğe kodlu (örn. "FBAB10. Tümevarımsal Akıl Yürütme")
+- kavramsalBeceriler: dizi, kodlu (örn. "KB2.4. Çözümleme")
+- egilimler: dizi, kodlu (örn. "E1.1. Merak")
+- programlarArasi: dizi, kodlu (örn. "SDB1.2. Kendini Düzenleme")
+- disiplinlerArasi: düz metin (örn. "Matematik, Fizik")
+- ogrenmeCiktisi: kodu ve metniyle öğrenme çıktısı (örn. "(9.1.6) ...")
+- surecAdimlari: dizi, "a) ...", "b) ..." biçiminde
+- onDegerlendirme: Ön Değerlendirme Süreci, 1-2 cümle
+- kopruKurma: Köprü Kurma, 1-2 cümle
+- uygulamalar: Öğrenme-Öğretme Uygulamaları, 3-5 cümle (etkinlik adlarını **kalın** yaz)
+- anahtarKavramlar: virgülle ayrılmış kavramlar
+- zenginlestirme: zenginleştirme etkinliği, 1-2 cümle
+- destekleme: destekleme etkinliği, 1-2 cümle
+- olcme: Öğrenme Kanıtları (ölçme ve değerlendirme), 1-2 cümle
+Yalnızca şu JSON'u döndür: {"gunler":[{"uniteTema":"...", ...}]} (ders günü sırası yukarıdaki gibi, gün sayısı kadar öğe).`;
+ const r=await gemini(tp,[],true);let gun=[];
+ try{gun=JSON.parse(r.match(/\{[\s\S]*\}/)[0]).gunler||[]}catch(e){}
+ if(!gun.length||typeof gun[0]!=='object'){toast('Yanıt çözülemedi.');return null}
+ return u0.days.map((_,i)=>gun[i]||gun[gun.length-1])}
+/* Şablondaki tarih / gün / ders saati / şube alanları yapay zekaya sorulmaz, şubenin programından doldurulur */
+const autoVal=(f,u,i)=>{const d=u.days[i];
+ if(f.tur==='tarih')return fmt(d);
+ if(f.tur==='gun')return DAYS[d.getDay()];
+ if(u.sec){if(f.tur==='ders_saati')return u.hrs[i]+' ders saati'+(u.slots[i]?' ('+slotTxt(u.slots[i])+')':'');
+  if(f.tur==='diger'&&/sınıf|şube|sinif|sube/i.test(f.etiket))return u.sec.name}};
+/* Şablon çıkarılamazsa: serbest biçimde, tek şube için yazar (tarihler o şubeye özeldir) */
+async function freeform(g,w,u,note,book,annual){
+ if(!g.sample)throw new Error('Plan yazılamadı. Tekrar deneyin veya Dosyalar sekmesinden örnek günlük plan yükleyin.');
+ const sm=g.sample,files=[];let sampleBlk;
+ if(sm.html)sampleBlk=`HTML ŞABLONU (örnek günlük plandan çevrildi):\n"""${sm.html.slice(0,30000)}"""\nŞABLON KURALI: Çıktıdaki her gün sayfası bu şablonun yapısını BİREBİR izlemeli: aynı tablolar, aynı satır/sütun sayısı ve sırası, aynı başlıklar ve etiketler, aynı kalın/italik düzen. Şablondaki örnek içeriği silip yerine bu günün bilgilerini yaz. Bölüm ekleme, bölüm çıkarma, sıra değiştirme.`;
+ else{if(sm.b64)files.push({mime:'application/pdf',data:sm.b64});
+  sampleBlk=`ÖRNEK GÜNLÜK PLAN${sm.b64?' (ekli PDF dosyasına da bak; görünümü, tablo yapısını ve başlıkları birebir taklit et)':''} METNİ:\n"""${sm.text.slice(0,20000)}"""\nŞABLON KURALI: Bu örneğin biçimini, başlıklarını, tablo yapısını ve bölüm sırasını birebir izle.`}
+ const days=u.days.map((d,i)=>`${DAYS[d.getDay()]} ${fmt(d)}${u.sec?' ('+u.hrs[i]+' ders saati)':''}`).join(', ');
+ const prompt=`Sen Türkiye'deki okullarda öğretmenlere günlük plan hazırlayan bir asistansın.
+Sınıf/Ders: ${g.name}${u.sec?' · Şube: '+u.sec.name:''}
+Okulda ${w.no}. hafta. Plan yazılacak günler${u.sec?' (bu şubenin ders günleri)':' (hafta sonu ve tatil günleri hariç)'}: ${days}.
+YILLIK PLAN:
+"""${annual}"""
+${sampleBlk}${book}
+${note?'ÖĞRETMEN NOTU: '+note:''}
+GÖREV: Yıllık plandan ${w.no}. haftaya karşılık gelen ünite, kazanım ve etkinlikleri bul. Örnek planın biçimini koruyarak yukarıda listelenen her gün için ayrı bir günlük plan yaz, listede olmayan gün için plan yazma. Yıllık planda bu hafta için kayıt yoksa en yakın konuyu esas al.
+ÇIKTI KURALLARI: Yalnızca HTML üret (markdown ve kod bloğu yok). Her gün için tam olarak bir <section class="page">...</section>. Okul adı, sınıf/şube, ders saati bilgisi ve imza alanı sayfaya otomatik eklenecek; bunları yazma. İçerik tek A4 sayfaya sığmalı (imza alanı için alt kısımda yer bırak); tablo için <table>, başlık için <h2>, liste için <ul> kullan. Stil/script ekleme.`;
+ STAGE=(u.sec?u.sec.name+' için ':'')+'plan yazılıyor…';
+ let h=(await gemini(prompt,files)).replace(/^\s*```(?:html)?\s*|\s*```\s*$/gi,'').trim();
+ if(!/<section/i.test(h))h='<section class="page">'+h+'</section>';
+ return h}
+/* Şube bazlı üretim: ders günü deseni (haftalık saat dağılımı) aynı olan şubeler aynı içeriği paylaşır,
+   tarih/gün/ders saati her şubenin kendi programından yazılır. Böylece 9-A ve 9-B için içerik aynı, tarihler farklıdır. */
+async function generate(g,date,note,useBook){
+ const w=Week.of(date);
+ if(!w)throw new Error('Önce Ayarlar bölümünden okulun ilk gün tarihini girin.');
+ if(w.no<1)throw new Error('Seçilen tarih okul başlangıcından önce.');
+ if(!w.work.length)throw new Error('Seçilen hafta tatil veya okul takvimi dışında; plan üretilmez.');
+ if(!g.annual?.text)throw new Error('Bu sınıf için yıllık plan yüklenmeli (Dosyalar sekmesi).');
+ if(S.settings.fmt==='sablon'&&!g.sample?.text)throw new Error('Şablon biçimi için örnek günlük plan yüklenmeli.');
+ g.plans=g.plans||[];
+ const units=unitsFor(g,w);
+ if(!units.length)throw new Error('Bu hafta bu dersin hiçbir şubesi için programlanmış ders günü yok. Ders programım bölümünü kontrol edin.');
+ const old=g.plans.filter(p=>p.week===w.no&&(!p.sec||units.some(u=>u.sec&&u.sec.id===p.sec)));
+ if(old.length&&!confirm(`${w.no}. hafta için ${old.length} plan zaten var. Üzerine yazılsın mı?`))return null;
+ const annual=g.annual.text.slice(0,70000),wkTxt=fmt(w.work[0])+' – '+fmt(w.work[w.work.length-1]);
+ let book='';
+ if(useBook&&g.book){
+  try{STAGE='Kitap bölümü aranıyor…';toast('Ders kitabında ilgili bölüm aranıyor…');
+   const r=await gemini(`Yıllık plana göre ${w.no}. haftada (${wkTxt}) işlenecek ünite/konu/kazanımı bul. Yalnızca JSON döndür: {"konu":"kısa konu başlığı","anahtar":["kelime veya kısa ifade"]} (en fazla 12 anahtar).\nYILLIK PLAN:\n"""${annual}"""`);
+   const m=r.match(/\{[\s\S]*\}/),j=m?JSON.parse(m[0]):{};
+   const pages=((await Books.get(g.id))||{}).pages||[];if(!pages.length)toast('Kitap verisi bulunamadı, Dosyalar sekmesinden yeniden yükleyin.');
+   const hit=pickBook(pages,[j.konu||'',...(j.anahtar||[])].filter(Boolean));
+   if(hit)book=`\nDERS KİTABI İLGİLİ BÖLÜM (Sayfa ${hit.from}–${hit.to}):\n"""${hit.text}"""\nKİTAP KURALI: Bu bölümdeki ilgili kavram, bilgi ve etkinlikleri günlere dağıtarak planın içerik/konu kısmına kendi cümlelerinle özetle; kaynak olarak "Ders kitabı s. ${hit.from}–${hit.to}" yaz. Kitaptan uzun birebir alıntı yapma.\n`;
+   else toast('Ders kitabında ilgili bölüm bulunamadı; kitapsız devam ediliyor.');
+  }catch(e){toast('Kitap bölümü alınamadı: '+e.message)}
+ }
+ let tpl=null;
+ const groups=[...units.reduce((m,u)=>m.set(u.sig,[...(m.get(u.sig)||[]),u]),new Map()).values()];
+ const made=[],errs=[];
+ for(const gr of groups){
+  const u0=gr[0],names=gr.map(u=>u.sec?u.sec.name:g.name).join(', ');
+  try{
+   let vals=null,ty=null;
+   if(S.settings.fmt!=='sablon')ty=await tymmDays(g,w,gr,u0,names,annual,book,note);
+   if(!ty&&g.sample&&!tpl)tpl=await getTemplate(g);
+   if(!ty&&tpl){
+    const ai=tpl.alanlar.filter(f=>autoVal(f,u0,0)===undefined);
+    if(!ai.length)vals=u0.days.map(()=>({}));
+    else{STAGE=(u0.sec?names+' için ':'')+'plan örnek şablona göre yazılıyor…';
+     const lines=ai.map(f=>`- ${f.k} | etiket: "${f.etiket}" | tür: ${f.tur} | örnek: "${f.ipucu}"`).join('\n');
+     const dayDesc=u0.sec?u0.days.map((d,i)=>`${i+1}. ders günü (${u0.hrs[i]} ders saati)`).join(', ')
+      :u0.days.map(d=>`${DAYS[d.getDay()]} ${fmt(d)}`).join(', ');
+     const share=u0.sec?`Bu içerik ${names} şube(ler)inde aynen kullanılacak; bu yüzden metinlere tarih, gün adı veya şube adı YAZMA (tarih, gün, ders saati ve şube alanları otomatik doldurulur). `:'';
+     const tp=`Sen Türkiye'deki okullarda öğretmenlere günlük plan hazırlayan bir asistansın.
+Sınıf/Ders: ${g.name}. Okulda ${w.no}. hafta. Plan yazılacak ders günleri: ${dayDesc}. ${share}Günlük içeriği o günkü ders saatine göre ayarla ve haftanın konusunu yalnızca bu ders günlerine mantıklı biçimde dağıt.
+YILLIK PLAN:
+"""${annual}"""${book}
+${note?'ÖĞRETMEN NOTU: '+note:''}
+Aşağıdaki şablon alanlarını yukarıdaki HER ders günü için doldur:
+${lines}
+KURALLAR: "icerik" türündeki alanları, varsa DERS KİTABI bölümündeki bilgi, kavram, örnek ve etkinliklerden doldur: kendi cümlelerinle özetle, günlere mantıklı biçimde dağıt, sayfa numarasını yaz. Kitap bölümü yoksa yıllık plana göre yaz. "kazanim" ve "konu" alanlarını yıllık plandan al. "diger" alanlarını örnekteki yazım biçimine benzer, bu derse uygun doldur. Her gün farklı ve eksiksiz olsun; hiçbir alanı boş bırakma. Değerler düz metin olsun (satır atlamak için \n kullan).
+Yalnızca şu JSON'u döndür: {"gunler":[{"degerler":{"ALAN_1":"...","ALAN_2":"..."}}]} (ders günü sırası yukarıdaki gibi, gün sayısı kadar öğe).`;
+     const r=await gemini(tp,[],true);let gun=[];
+     try{gun=JSON.parse(r.match(/\{[\s\S]*\}/)[0]).gunler||[]}catch(e){}
+     if(gun.length)vals=u0.days.map((_,i)=>(gun[i]&&gun[i].degerler)||{});
+     else toast('Yanıt çözülemedi, serbest biçime geçiliyor.')}
+   }
+   for(const u of gr){
+    let h;
+    if(ty)h=u.days.map((d,i)=>'<section class="page">'+tymmHTML(ty[i]||{},u,i)+'</section>').join('');
+    else if(vals)h=u.days.map((d,i)=>'<section class="page">'+tpl.html.replace(/\{\{(\w+)\}\}/g,(_,k)=>{
+      const f=tpl.alanlar.find(x=>x.k===k),a=f?autoVal(f,u,i):undefined,v=a!==undefined?a:(vals[i]||{})[k];
+      return esc(v==null?'':String(v)).replace(/\n/g,'<br>')})+'</section>').join('');
+    else h=await freeform(g,w,u,note,book,annual);
+    made.push({id:uid(),week:w.no,sec:u.sec?u.sec.id:'',secName:u.sec?u.sec.name:'',from:iso(u.days[0]),to:iso(u.days[u.days.length-1]),html:decorate(clean(h),g,w,u),at:Date.now()})}
+  }catch(e){errs.push(names+': '+e.message)}
+ }
+ if(!made.length)throw new Error(errs[0]||'Plan üretilemedi.');
+ if(errs.length)toast('Bazı şubeler üretilemedi: '+errs.join(' | '));
+ g.plans=g.plans.filter(p=>!old.includes(p)||(p.sec&&!made.some(m=>m.sec===p.sec)));
+ g.plans.push(...made);
+ g.plans.sort((a,b)=>a.week-b.week||(a.secName||'').localeCompare(b.secName||'','tr'));
+ save();return made;
+}
+
+/* ---- Exporter ---- */
+function dl(blob,name){
+ if(AND){const r=new FileReader();r.onload=()=>{const ok=AND.saveDownload(name,String(r.result).split(',')[1],blob.type||'application/octet-stream');toast(ok?'İndirilenler klasörüne kaydedildi: '+name:'Dosya kaydedilemedi.')};r.readAsDataURL(blob);return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+/* Her sayfa kendi tek A4 sayfasına sığacak şekilde yazı boyutu küçültülür */
+function fitPage(p){const pc=p.querySelector('.pc');if(!pc)return 1;pc.style.fontSize='';
+ const base=Math.round(parseFloat(getComputedStyle(pc).fontSize)*75)/100;let r=1;
+ while(pc.scrollHeight>pc.clientHeight+1&&r>.5){r=Math.round((r-.03)*100)/100;pc.style.fontSize=(base*r)+'pt'}
+ const rg=document.createRange();rg.selectNodeContents(pc);
+ p.dataset.base=base;p.dataset.fit=r;p.dataset.fill=(rg.getBoundingClientRect().height/(pc.clientHeight||1)).toFixed(2);return r}
+async function pageCanvas(el){
+ if(!window.html2canvas)throw new Error('PDF bileşeni yüklenemedi. İnternet bağlantısını kontrol edip tekrar deneyin.');
+ for(const sc of[2,1.5,1]){try{const c=await html2canvas(el,{scale:sc,backgroundColor:'#ffffff',useCORS:true,logging:false,windowWidth:900,scrollX:0,scrollY:0});if(c&&c.width>50&&c.height>50)return c}catch(e){}}
+ throw new Error('Sayfa görüntüye çevrilemedi (telefonun belleği yetmemiş olabilir). Planı sayfa sayfa dışa aktarmayı deneyin.')}
+/* Basit PDF yazıcı: her sayfa tam boy bir JPEG görüntüsü (A4). Harici PDF kütüphanesi gerekmez. */
+function jpegPdf(imgs){
+ const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+ const put=x=>{const b=typeof x==='string'?enc.encode(x):x;parts.push(b);len+=b.length};
+ const W=595.28,H=841.89,n=imgs.length;
+ put('%PDF-1.4\n');
+ const obj=(i,fn)=>{offs[i]=len;put(i+' 0 obj\n');fn();put('\nendobj\n')};
+ obj(1,()=>put('<< /Type /Catalog /Pages 2 0 R >>'));
+ obj(2,()=>put('<< /Type /Pages /Count '+n+' /Kids ['+imgs.map((_,i)=>(3+3*i)+' 0 R').join(' ')+'] >>'));
+ imgs.forEach((im,i)=>{const p=3+3*i,c=p+1,x=p+2,cs=`q ${W} 0 0 ${H} 0 0 cm /Im${i} Do Q`;
+  obj(p,()=>put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im${i} ${x} 0 R >> >> /Contents ${c} 0 R >>`));
+  obj(c,()=>put(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+  obj(x,()=>{put(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.data.length} >>\nstream\n`);put(im.data);put('\nendstream')})});
+ const xr=len,tot=3+3*n;
+ put(`xref\n0 ${tot}\n0000000000 65535 f \n`+offs.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join(''));
+ put(`trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+ return new Blob(parts,{type:'application/pdf'})}
+const b64u8=u=>{const b=atob(u.split(',')[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a};
+async function toPdf(html,name){
+ const host=document.createElement('div');host.className='host';host.innerHTML=html;document.body.appendChild(host);
+ const sy=window.scrollY;window.scrollTo(0,0);
+ try{
+  if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  const pages=[...host.querySelectorAll('.page')],imgs=[];pages.forEach(fitPage);
+  for(let i=0;i<pages.length;i++){toast(`PDF hazırlanıyor… ${i+1}/${pages.length}`);
+   const c=await pageCanvas(pages[i]);imgs.push({data:b64u8(c.toDataURL('image/jpeg',.93)),w:c.width,h:c.height});c.width=c.height=1;
+   await new Promise(r=>setTimeout(r,30))}
+  dl(jpegPdf(imgs),name+'.pdf')
+ }finally{host.remove();window.scrollTo(0,sy)}
+}
+const NAVY='14213D',ACC='2F5BEA',LN='C5CDDF',HB='EDF1FA',MUT='4A5670';let DSZ=20,DFONT='Cambria';
+function runs(n,b,col,sz){const o=[];n.childNodes.forEach(c=>{
+ if(c.nodeType===3){if(c.textContent.trim())o.push(new docx.TextRun({text:c.textContent.replace(/\s+/g,' '),bold:b,size:sz||DSZ,color:col,font:DFONT}))}
+ else if(c.nodeName==='BR')o.push(new docx.TextRun({break:1}));
+ else o.push(...runs(c,b||/^(B|STRONG|TH|H\d)$/.test(c.nodeName),col,sz))});return o}
+function mkTable(c){const bd={style:docx.BorderStyle.SINGLE,size:4,color:LN};
+ const nc=c.rows[0]?[...c.rows[0].cells].reduce((a,x)=>a+(x.colSpan||1),0):0,TW=10206,cw=nc===2?[2400,TW-2400]:nc>0?Array(nc).fill(Math.floor(TW/nc)):undefined;
+ return new docx.Table({width:{size:TW,type:docx.WidthType.DXA},columnWidths:cw,layout:docx.TableLayoutType.FIXED,borders:{top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd},
+  rows:[...c.rows].map(r=>new docx.TableRow({children:[...r.cells].map(x=>{const th=x.nodeName==='TH';
+   return new docx.TableCell({width:cw&&(x.colSpan||1)===1?{size:cw[x.cellIndex]||cw[0],type:docx.WidthType.DXA}:undefined,columnSpan:x.colSpan>1?x.colSpan:undefined,shading:th?{type:docx.ShadingType.CLEAR,fill:HB,color:'auto'}:undefined,margins:{top:40,bottom:40,left:90,right:90},
+    children:[new docx.Paragraph({children:runs(x,th,th?NAVY:undefined)})]})})}))})}
+const TYW=10206,CH={c1:['DBEAFE','1E40AF'],c2:['D1FAE5','047857'],c3:['FEF3C7','B45309'],c4:['F3E8FF','6B21A8']};
+const nob={style:docx.BorderStyle.NONE,size:0,color:'FFFFFF'},NOB={top:nob,bottom:nob,left:nob,right:nob};
+const bx=(c,z)=>{const b={style:docx.BorderStyle.SINGLE,size:z||4,color:c};return{top:b,bottom:b,left:b,right:b}};
+const SPC=()=>new docx.Paragraph({spacing:{before:0,after:0,line:70},children:[]});
+function tyRuns(n,o){o=o||{};const r=[];n.childNodes.forEach(c=>{
+ if(c.nodeType===3){if(c.textContent!=='')r.push(new docx.TextRun({text:c.textContent.replace(/\s+/g,' '),bold:o.b,italics:o.i,size:DSZ,color:o.col,font:DFONT}))}
+ else if(c.nodeName==='BR')r.push(new docx.TextRun({break:1}));
+ else{const nb=/^(B|STRONG)$/.test(c.nodeName),ni=/^(I|EM)$/.test(c.nodeName);r.push(...tyRuns(c,{b:o.b||nb,i:o.i||ni,col:nb&&o.bcol?o.bcol:o.col,bcol:o.bcol}))}});return r}
+function tyChips(el){const r=[];el.querySelectorAll('.chip').forEach(s=>{const k=[...s.classList].find(x=>CH[x]),f=CH[k]||CH.c1;
+ r.push(new docx.TextRun({text:' '+s.textContent+' ',bold:true,size:DSZ-2,color:f[1],font:DFONT,shading:{type:docx.ShadingType.CLEAR,fill:f[0],color:'auto'}}),new docx.TextRun({text:'  ',size:DSZ-2}))});
+ return new docx.Paragraph({children:r,spacing:{before:20,after:70,line:300}})}
+function tyRow(c,W){const kids=[...c.children],n=kids.length||1,cw=Math.floor(W/n);
+ const cells=kids.map(k=>{const dv=k.classList.contains('dv');let ch;
+  if(dv){const z=k.classList.contains('z'),h=k.querySelector('h4'),p=k.querySelector('p');
+   ch=[new docx.Paragraph({border:{bottom:{style:docx.BorderStyle.SINGLE,size:12,color:z?'6EE7B7':'FCD34D',space:2}},spacing:{after:40},children:[new docx.TextRun({text:h?h.textContent:'',bold:true,size:DSZ,color:z?'047857':'B45309',font:DFONT})]}),new docx.Paragraph({children:p?tyRuns(p,{}):[]})]}
+  else ch=k.querySelector('.lb,.chips')?tyBlocks(k,cw-200):[new docx.Paragraph({spacing:{after:20},children:tyRuns(k,{bcol:'1E3A8A'})})];
+  if(!ch.length||ch[ch.length-1] instanceof docx.Table)ch.push(SPC());
+  return new docx.TableCell({width:{size:cw,type:docx.WidthType.DXA},borders:dv?bx('CBD5E1'):NOB,margins:{top:60,bottom:60,left:100,right:100},children:ch})});
+ return[new docx.Table({width:{size:W,type:docx.WidthType.DXA},columnWidths:Array(n).fill(cw),layout:docx.TableLayoutType.FIXED,borders:{...NOB,insideHorizontal:nob,insideVertical:nob},rows:[new docx.TableRow({children:cells})]}),SPC()]}
+function tyBlocks(el,W){const out=[];[...el.children].forEach(c=>{const cl=c.classList;
+ if(cl.contains('r2'))out.push(...tyRow(c,W));
+ else if(cl.contains('lb'))out.push(new docx.Paragraph({spacing:{before:20,after:20},children:[new docx.TextRun({text:c.textContent,bold:true,size:DSZ,color:'1E3A8A',font:DFONT})]}));
+ else if(cl.contains('chips'))out.push(tyChips(c));
+ else if(cl.contains('lo'))out.push(new docx.Paragraph({shading:{type:docx.ShadingType.CLEAR,fill:'E2E8F0',color:'auto'},spacing:{before:20,after:60},children:tyRuns(c,{b:true,col:'1E3A8A',bcol:'1E3A8A'})}));
+ else if(cl.contains('cd')){const bl={left:{style:docx.BorderStyle.SINGLE,size:18,color:'1E3A8A',space:6}},h=c.querySelector('h4'),p=c.querySelector('p');
+  out.push(new docx.Paragraph({border:bl,indent:{left:140},spacing:{before:50,after:0},children:[new docx.TextRun({text:h?h.textContent:'',bold:true,size:DSZ,color:'1E3A8A',font:DFONT})]}),
+   new docx.Paragraph({border:bl,indent:{left:140},spacing:{before:0,after:50},children:p?tyRuns(p,{bcol:'1E3A8A'}):[]}))}
+ else out.push(new docx.Paragraph({spacing:{before:20,after:40},children:tyRuns(c,{bcol:'1E3A8A'})}))});return out}
+function tySections(ty){const out=[],W=TYW;[...ty.children].filter(c=>c.classList.contains('sec')).forEach(sc=>{
+ const sb=sc.querySelector('.sb'),inner=tyBlocks(sc.querySelector('.sbody'),W-240);
+ if(!inner.length||inner[inner.length-1] instanceof docx.Table)inner.push(SPC());
+ out.push(new docx.Table({width:{size:W,type:docx.WidthType.DXA},columnWidths:[W],layout:docx.TableLayoutType.FIXED,rows:[
+  new docx.TableRow({children:[new docx.TableCell({shading:{type:docx.ShadingType.CLEAR,fill:'1E3A8A',color:'auto'},borders:bx('1E3A8A'),margins:{top:50,bottom:50,left:120,right:120},children:[new docx.Paragraph({children:[new docx.TextRun({text:sb?sb.textContent:'',bold:true,size:DSZ,color:'FFFFFF',font:DFONT})]})]})]}),
+  new docx.TableRow({children:[new docx.TableCell({borders:bx('CBD5E1'),margins:{top:60,bottom:60,left:120,right:120},children:inner})]})]}),SPC())});return out}
+function blocks(el){const out=[];[...el.children].forEach(c=>{const t=c.nodeName,cl=c.classList;if(cl.contains('sh')||cl.contains('sig')||cl.contains('bar'))return;
+ if(cl.contains('ty')){out.push(...tySections(c));return}
+ if(t==='TABLE')out.push(mkTable(c),new docx.Paragraph({spacing:{before:0,after:0,line:100},children:[]}));
+ else if(t==='UL'||t==='OL')[...c.children].forEach(li=>out.push(new docx.Paragraph({children:runs(li,false),bullet:{level:0},spacing:{after:30}})));
+ else if(/^H\d$/.test(t))out.push(new docx.Paragraph({children:runs(c,true,NAVY,DSZ+(t==='H1'?6:3)),alignment:t==='H1'?docx.AlignmentType.CENTER:undefined,spacing:{before:80,after:50}}));
+ else if(c.children.length&&[...c.children].some(x=>/^(TABLE|UL|OL|P|DIV|H\d)$/.test(x.nodeName)))out.push(...blocks(c));
+ else out.push(new docx.Paragraph({children:runs(c,false),spacing:{after:40}}))});return out}
+function secOf(p){
+ const sh=p.querySelector('.sh'),sig=p.querySelector('.sig'),C=docx.AlignmentType.CENTER,L=docx.BorderStyle.SINGLE;
+ const fit=+p.dataset.fit||1,fill=+p.dataset.fill||0;
+ const bs=Math.round((+p.dataset.base||10)*2);DFONT=p.querySelector('.ty')?'Calibri':'Cambria';
+ DSZ=fit<1?Math.max(12,Math.round(bs*fit*.9)):(!p.querySelector('.ty')&&fill>.85?bs-2:bs);
+ const hdr=[new docx.Paragraph({border:{bottom:{style:L,size:18,color:NAVY,space:1}},spacing:{after:80},children:[]})];
+ if(sh)[...sh.children].forEach((c,i,a)=>{const k=c.className,last=i===a.length-1;
+  const o={alignment:C,spacing:{after:last?0:20},children:[new docx.TextRun(k==='sn'?{text:c.textContent.toLocaleUpperCase('tr'),bold:true,size:28,color:NAVY}:k==='st'?{text:c.textContent,bold:true,size:16,color:ACC,characterSpacing:50}:{text:c.textContent,size:17,color:MUT})]};
+  if(last)o.border={bottom:{style:L,size:6,color:NAVY,space:4}};
+  hdr.push(new docx.Paragraph(o))});
+ let ftr=[new docx.Paragraph('')];
+ if(sig){const nb={style:docx.BorderStyle.NONE,size:0,color:'FFFFFF'};
+  const cells=[...sig.children].map(c=>{const nm=c.querySelector('.nm'),ti=c.querySelector('.ti');
+   return new docx.TableCell({width:{size:50,type:docx.WidthType.PERCENTAGE},borders:{top:nb,bottom:nb,left:nb,right:nb},children:[
+    new docx.Paragraph({alignment:C,spacing:{before:480},indent:{left:700,right:700},border:{top:{style:L,size:6,color:NAVY,space:3}},children:[new docx.TextRun({text:nm?nm.textContent:'',bold:true,size:21,color:NAVY})]}),
+    new docx.Paragraph({alignment:C,children:[new docx.TextRun({text:ti?ti.textContent:'',size:17,color:MUT})]})]})});
+  ftr=[new docx.Table({width:{size:100,type:docx.WidthType.PERCENTAGE},borders:docx.TableBorders&&docx.TableBorders.NONE,rows:[new docx.TableRow({children:cells})]})]}
+ return{properties:{page:{size:{width:11906,height:16838},margin:{top:1100,bottom:1500,left:850,right:850,header:300,footer:350}}},
+  headers:{default:new docx.Header({children:hdr})},footers:{default:new docx.Footer({children:ftr})},children:blocks(p)}}
+async function toDocx(html,name){
+ const host=document.createElement('div');host.className='host';host.innerHTML=html;document.body.appendChild(host);
+ try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  const pages=[...host.querySelectorAll('.page')];pages.forEach(fitPage);
+  const doc=new docx.Document({styles:{default:{document:{run:{font:'Cambria',size:20}}}},sections:pages.map(p=>secOf(p))});
+  dl(await docx.Packer.toBlob(doc),name+'.docx')}finally{host.remove()}
+}
+async function doExport(plans,name,fmt,btn){
+ if(!plans.length)return toast('Aktarılacak plan yok.');
+ const html=plans.map(p=>upgradeHtml(p.html)).join('');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Hazırlanıyor…'}
+ try{fmt==='pdf'?await toPdf(html,name):await toDocx(html,name)}catch(e){toast('Dışa aktarma hatası: '+e.message)}
+ if(btn){btn.disabled=false;btn.textContent=old}
+}
+
+/* ============ UI ============ */
+function renderRail(){
+ $('#rail').innerHTML='<h1>Günlük Plan Asistanı</h1>'+S.grades.map(g=>`<button data-a="grade" data-id="${g.id}" class="${UI.gid===g.id?'on':''}">${esc(g.name)}</button>`).join('')
+ +'<button data-a="addGrade">+ Sınıf ekle</button><hr><button data-a="program" class="'+(UI.gid==='program'?'on':'')+'">Ders programım</button><button data-a="settings" class="'+(UI.gid==='settings'?'on':'')+'">Ayarlar</button>';
+}
+function renderMain(){
+ const m=$('#main');
+ if(UI.gid==='settings')return m.innerHTML=settingsHTML();
+ if(UI.gid==='program')return m.innerHTML=programHTML();
+ const g=G();if(g){g.sections=g.sections||[];g.plans=g.plans||[]}
+ if(!g)return m.innerHTML=`<div class="card"><h2>Başlayalım</h2><p class="mut">1) Ayarlar'dan API anahtarlarını ve okul başlangıç tarihini girin. 2) Sol menüden bir sınıf ekleyin. 3) Yıllık planı ve örnek günlük planı bir kez yükleyin.</p><button class="btn p" data-a="addGrade">Sınıf ekle</button></div>`;
+ const tabs=[['uret','Plan üret'],['planlar',`Planlarım (${g.plans.length})`],['sube','Şubeler'],['dosya','Dosyalar']];
+ m.innerHTML=`<div class="top"><h2>${esc(g.name)}</h2><span class="sp"></span><button class="btn" data-a="rename">Adı düzenle</button><button class="btn d" data-a="delGrade">Sınıfı sil</button></div>
+ <div class="tabs">${tabs.map(t=>`<button data-a="tab" data-id="${t[0]}" class="${UI.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>`
+ +(UI.tab==='uret'?genHTML(g):UI.tab==='planlar'?listHTML(g):UI.tab==='sube'?subeHTML(g):fileHTML(g));
+ if(UI.tab==='uret')updWeek();
+}
+function genHTML(g){return`<div class="card"><label class="f">Tarih (geriye dönük için eski bir tarih seçin)</label>
+ <div class="row"><button class="btn" data-a="shift" data-id="-7">‹ Önceki hafta</button><input type="date" id="dt" value="${UI.date}" style="width:auto"><button class="btn" data-a="shift" data-id="7">Sonraki hafta ›</button><button class="btn" data-a="today">Bugün</button></div>
+ <div class="week"><b id="wno">–</b><span id="wtxt"></span></div><div class="warn" id="wwarn"></div><div id="wprev" class="mut"></div>
+ <label class="f">Öğretmen notu (isteğe bağlı)</label><textarea id="note" placeholder="Örn. Cuma günü okul gezisi var, tekrar etkinliği ekle."></textarea>
+ ${g.book?'<label class="f" style="color:var(--ink)"><input type="checkbox" id="usebook" checked> Ders kitabından ilgili bölümü içeriğe ekle <span class="mut">(ek token harcar)</span></label>':'<p class="mut">Ders kitabı yüklenmedi. Dosyalar sekmesinden PDF olarak ekleyebilirsiniz.</p>'}
+ <div class="warn" id="gerr">${esc(UI.err||'')}</div><p><button class="btn p" data-a="gen" id="genb">Haftanın planını üret</button></p></div>`}
+function updWeek(){const w=Week.of(UI.date);if(!$('#wno'))return;
+ if(!w){$('#wno').textContent='–';$('#wtxt').textContent='';$('#wwarn').textContent='Ayarlar bölümünden okulun ilk gün tarihini girin.';return}
+ const ok=w.no>=1&&w.work.length;
+ $('#wno').textContent=ok?w.no:'–';
+ $('#wtxt').textContent=ok?`. hafta · ${fmt(w.work[0])} – ${fmt(w.work[w.work.length-1])} · ${w.work.length} iş günü`:'Plan üretilecek ders günü yok';
+ $('#wwarn').textContent=w.no<1?'Seçilen tarih okul başlangıcından önce.':!w.work.length?'Bu hafta tatil veya okul takvimi dışında.':'';
+ const g=G(),pv=$('#wprev');if(!pv||!g)return;
+ if(!ok){pv.innerHTML='';return}
+ if(!hasSched(g)){pv.innerHTML='Ders programı girilmediği için tek plan, tüm iş günleri için üretilir. Şube bazlı plan için “Şubeler” sekmesinde şube ekleyip “Ders programım” bölümünü doldurun.';return}
+ const us=unitsFor(g,w),skip=g.sections.filter(x=>x.name&&!us.some(u=>u.sec===x));
+ pv.innerHTML='<b style="color:var(--ink)">Bu hafta üretilecek planlar</b><br>'+(us.length?us.map(u=>`<b>${esc(u.sec.name)}</b>: ${u.days.map((d,i)=>`${DN[d.getDay()-1]} ${fmt(d)} (${u.hrs[i]} saat)`).join(', ')}`).join('<br>'):'Bu hafta dersi olan şube yok.')
+  +(skip.length?`<br>Bu hafta dersi olmayan: ${skip.map(x=>esc(x.name)).join(', ')}`:'')}
+const DN=['Pzt','Sal','Çar','Per','Cum'],DNF=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma'];
+const wk=x=>{const v=Object.values(x.sched||{});return v.length?v.reduce((a,b)=>a+ +b,0):(+x.hours||0)};
+const dayHours=(g,i)=>g.sections.filter(x=>x.name).map(x=>({n:x.name,h:+((x.sched||{})[i]||0)})).filter(x=>x.h>0);
+const hasSched=g=>g.sections.some(x=>x.name&&Object.values(x.sched||{}).some(v=>+v>0));
+/* ---- Öğretmenin haftalık ders programı: S.tt.d[gün][ders saati] = "sınıfId:şubeId" ---- */
+function ttSync(){
+ const T=S.tt,ix={};
+ S.grades.forEach(g=>g.sections.forEach(x=>{ix[g.id+':'+x.id]=x;x.sched={};x.slots={};x.hours=0}));
+ for(let d=0;d<5;d++){
+  const row=Array.from({length:T.n},(_,p)=>{const k=(T.d[d]||[])[p];return ix[k]?k:''});T.d[d]=row;
+  row.forEach((k,p)=>{const x=ix[k];if(x){x.sched[d]=(x.sched[d]||0)+1;(x.slots[d]=x.slots[d]||[]).push(p+1)}})}
+ S.grades.forEach(g=>g.sections.forEach(x=>{x.hours=wk(x)}));
+}
+function fixSig(){const t=S.settings,r=/\s[–—-]\s/;
+ if(!t.teacherTitle&&r.test(t.teacher||'')){const m=t.teacher.split(r);t.teacher=m[0].trim();t.teacherTitle=m.slice(1).join(' – ').trim()}}
+function ttInit(){fixSig();
+ if(!S.tt||!Array.isArray(S.tt.d)){
+  /* Eski sürümde girilmiş şube gün/saatleri varsa sırayla yerleştirilir; kaçıncı ders olduğu kullanıcıdan onay bekler */
+  const d=[0,1,2,3,4].map(i=>{const row=[];S.grades.forEach(g=>g.sections.forEach(x=>{for(let k=0;k<+((x.sched||{})[i]||0);k++)row.push(g.id+':'+x.id)}));return row});
+  S.tt={n:Math.max(8,...d.map(r=>r.length)),d,mig:d.some(r=>r.length>0)};
+ }
+ S.tt.n=+S.tt.n||8;ttSync();
+}
+const ttOpts=sel=>'<option value="">—</option>'+S.grades.flatMap(g=>g.sections.filter(x=>x.name).map(x=>{const k=g.id+':'+x.id;return`<option value="${k}" ${sel===k?'selected':''}>${esc(x.name)} · ${esc(g.name)}</option>`})).join('');
+const secSum=x=>Object.entries(x.sched||{}).filter(([,v])=>+v>0).map(([i,v])=>DN[i]+' '+v).join(', ');
+function subeHTML(g){const tot=g.sections.reduce((a,x)=>a+wk(x),0);
+ return`<div class="card"><b>Şubeler</b><p class="mut">Bu dersin şubelerini (9-A, 9-B…) ekleyin. Şubenin hangi gün ve kaçıncı derste olduğu <b>Ders programım</b> bölümünde seçilir. Plan, her şube için yalnızca o şubenin ders günlerine üretilir; haftalık ders saati dağılımı aynı olan şubelerin içeriği ortaktır, tarihleri kendi ders günlerine göre yazılır.</p>`
+ +g.sections.map(x=>`<div class="item"><div class="row"><input type="text" data-sn="${x.id}" value="${esc(x.name)}" placeholder="9-A" style="width:100px"><span class="mut">${wk(x)?`Haftalık ${wk(x)} saat · ${secSum(x)}`:'Ders programında yok'}</span></div><button class="btn d" data-a="delSec" data-id="${x.id}">Sil</button></div>`).join('')
+ +`<p><button class="btn" data-a="addSec">+ Şube ekle</button> <button class="btn" data-a="program">Ders programıma git</button> <span class="mut">Toplam: ${tot} saat / hafta</span></p></div>`}
+function programHTML(){const w=Week.of(UI.date),T=S.tt,nS=S.grades.reduce((a,g)=>a+g.sections.filter(x=>x.name).length,0);
+ const cnt=d=>T.d[d].filter(Boolean).length,tot=[0,1,2,3,4].reduce((a,d)=>a+cnt(d),0);
+ const days=DNF.map((n,d)=>`<div class="card"><div class="row"><b>${n}</b><span class="mut">${cnt(d)} ders</span></div>`
+  +T.d[d].map((k,p)=>`<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span class="mut" style="width:56px;flex:none">${p+1}. ders</span><select data-tt="${d}:${p}" style="flex:1;min-width:0">${ttOpts(k)}</select></div>`).join('')+'</div>').join('');
+ const sum=S.grades.flatMap(g=>g.sections.filter(x=>x.name).map(x=>`<div class="item"><span><b>${esc(x.name)}</b> · ${esc(g.name)}</span><span class="mut">${wk(x)?wk(x)+' saat/hafta · '+secSum(x):'programda yok'}</span></div>`)).join('');
+ const ns=[...new Set([6,7,8,9,10,11,12,T.n])].sort((a,b)=>a-b);
+ return`<div class="top"><h2>Ders programım</h2></div>`
+ +(T.mig?`<div class="card"><b>Ders saatlerini kontrol edin</b><p class="mut">Önceki ayarlarınızdaki gün ve saat bilgileri aşağıya sırayla (1. ders, 2. ders…) yerleştirildi. Gerçek ders saatlerinize göre düzeltin, sonra onaylayın. Onaylayana kadar planlarda “kaçıncı ders” bilgisi yazılmaz.</p><button class="btn p" data-a="ttOk">Doğru, onayla</button></div>`:'')
+ +(nS?'':`<div class="card warn">Önce sol menüden bir sınıf/ders ekleyip “Şubeler” sekmesinde şubeleri (9-A, 9-B…) oluşturun.</div>`)
+ +`<div class="card"><p class="mut">Her gün için hangi derste hangi şubeye girdiğinizi seçin; boş bırakılan saatlerde ders yok sayılır. Plan yalnızca dersiniz olan günler için, her şubeye ayrı üretilir.</p><div class="row"><label class="mut">Günlük ders saati sayısı <select data-ttn="1" style="width:auto">${ns.map(n=>`<option ${n===T.n?'selected':''}>${n}</option>`).join('')}</select></label><span class="mut">Toplam: ${tot} saat / hafta</span></div></div>`
+ +`<div class="ttg">${days}</div>`
+ +`<div class="card"><b>Şubelere göre haftalık ders</b>${sum||'<p class="mut">Şube yok.</p>'}</div>`
+ +`<div class="card"><b>Tüm dersler için plan üret</b><label class="f">Tarih</label><div class="row"><input type="date" id="pdt" value="${UI.date}" style="width:auto"><span class="mut">${w&&w.no>0?w.no+'. hafta':''}</span></div>
+ <div class="warn">${esc(UI.err||'')}</div><p><button class="btn p" data-a="genAll" id="genall">Programdaki tüm sınıflar için üret</button></p></div>`}
+function planRow(p){const t=`${p.week}. hafta${p.secName?' · '+esc(p.secName):''}`;
+ return`<div class="item"><div><b>${t}</b> <span class="mut">${fmt(new Date(p.from+'T00:00'))} – ${fmt(new Date(p.to+'T00:00'))} · ${p.html.split(/<section/i).length-1} sayfa</span></div>
+ <div class="row"><button class="btn" data-a="open" data-id="${p.id}">Aç / düzenle</button><button class="btn" data-a="exp" data-f="pdf" data-id="${p.id}">PDF</button><button class="btn" data-a="exp" data-f="docx" data-id="${p.id}">DOCX</button><button class="btn d" data-a="delPlan" data-id="${p.id}">Sil</button></div></div>`}
+function listHTML(g){
+ const weeks=[...new Set(g.plans.map(p=>p.week))];
+ return`<div class="card">`+(g.plans.length?weeks.map(wn=>{const ps=g.plans.filter(p=>p.week===wn);
+  return ps.map(planRow).join('')+(ps.length>1?`<div class="item"><span class="mut">${wn}. hafta · ${ps.length} şubenin planı tek dosyada</span><div class="row"><button class="btn" data-a="expWeek" data-f="pdf" data-id="${wn}">PDF</button><button class="btn" data-a="expWeek" data-f="docx" data-id="${wn}">DOCX</button></div></div>`:'')}).join('')
+ +`<div class="item"><span class="mut">Tüm planlar tek dosyada</span><div class="row"><button class="btn" data-a="expAll" data-f="pdf">PDF</button><button class="btn" data-a="expAll" data-f="docx">DOCX</button></div></div>`:'<p class="mut">Henüz plan yok. “Plan üret” sekmesinden başlayın.</p>')+`</div>`
+ +(UI.view&&g.plans.find(p=>p.id===UI.view)?viewerHTML(g.plans.find(p=>p.id===UI.view)):'')}
+function viewerHTML(p){return`<div class="card"><div class="top"><b>${p.week}. hafta planı${p.secName?' · '+esc(p.secName):''}</b><span class="sp"></span><span class="mut">Metne tıklayıp doğrudan düzeltebilirsiniz</span><button class="btn p" data-a="savePlan" data-id="${p.id}">Kaydet</button><button class="btn" data-a="close">Kapat</button></div>
+ <div class="viewer"><div id="doc" contenteditable="true">${upgradeHtml(p.html)}</div></div></div>`}
+function fileHTML(g){const one=(k,t)=>{const f=g[k];return`<div class="card"><b>${t}</b>`+(f?`<div class="item"><span>${esc(f.name)} <span class="mut">· ${f.text.length.toLocaleString('tr')} karakter</span></span><button class="btn d" data-a="delFile" data-id="${k}">Sil</button></div>
+ <details><summary class="mut" style="cursor:pointer">Okunan metni düzelt</summary><textarea data-t="${k}" style="min-height:200px">${esc(f.text)}</textarea></details>`:'<p class="mut">Yüklenmedi.</p>')
+ +`<label class="btn" style="margin-top:8px">${f?'Değiştir':'PDF / DOCX yükle'}<input type="file" hidden accept=".pdf,.docx" data-f="${k}"></label></div>`};
+ const bk=g.book?`<div class="item"><span>${esc(g.book.name)} <span class="mut">· ${g.book.n} sayfa</span></span><button class="btn d" data-a="delFile" data-id="book">Sil</button></div>`:'<p class="mut">Yüklenmedi.</p>';
+ return one('annual','Yıllık plan')+one('sample','Örnek günlük plan')+tplHTML(g)+`<div class="card"><b>Ders kitabı (PDF)</b>${bk}<p class="mut">Plan üretirken haftanın konusuna uyan sayfalar otomatik bulunup içerik bölümüne eklenir. Kitap tarayıcıda saklanır.</p><label class="btn">${g.book?'Değiştir':'PDF yükle'}<input type="file" hidden accept=".pdf" data-f="book"></label></div>`}
+function tplHTML(g){const t=g.sample&&g.sample.tpl;if(!g.sample)return'';
+ if(!t)return`<div class="card"><b>Şablon alanları</b><p class="mut">${g.sample.html||g.sample.b64?'Örnek plan ilk plan üretiminde otomatik analiz edilir.':'Örnek planı yeniden yükleyin; şablon çıkarılamıyor.'}</p></div>`;
+ const T=[['icerik','İçerik (ders kitabından)'],['kazanim','Kazanım (yıllık plandan)'],['konu','Konu / Ünite'],['tarih','Tarih'],['gun','Gün'],['ders_saati','Ders saati'],['diger','Diğer']];
+ return`<div class="card"><b>Şablon alanları</b><p class="mut">Örnek plandan tanınan bölümler. “İçerik” türündeki alanlar ders kitabından doldurulur. Yanlış tanındıysa türünü değiştirin.</p>`
+ +t.alanlar.map((f,i)=>`<div class="item"><span>${esc(f.etiket)}</span><select data-ft="${i}" style="width:auto">${T.map(x=>`<option value="${x[0]}" ${f.tur===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></div>`).join('')
+ +`<p><button class="btn" data-a="resetTpl">Şablonu yeniden çıkar</button></p></div>`}
+function settingsHTML(){const o=Pool.order().map(k=>k.id);const s=S.settings;
+ return`<div class="top"><h2>Ayarlar</h2></div><div class="card"><b>Okul ve imza bilgileri</b>${tf('school','Okulun adı','Örn. Atatürk Anadolu Lisesi')}${tf('teacher','Ders öğretmeninin adı soyadı (sayfanın sol altında imza)','Örn. Ayşe Kaya')}${tf('teacherTitle','Ders öğretmeninin unvanı (adın altında yazılır)','Örn. Matematik Öğretmeni')}${tf('principal','Okul müdürünün adı soyadı (sayfanın sağ altında imza)','Örn. Mehmet Demir')}${tf('principalTitle','Okul müdürünün unvanı (adın altında yazılır)','Okul Müdürü')}</div><div class="card"><b>Okul takvimi</b><p class="mut">Cumartesi ve Pazar günleri otomatik hafta sonu tatili sayılır. Ara tatil ve yarıyıl tatilinde yalnızca başlangıç tarihini girin, bitiş tarihi otomatik hesaplanır.</p>${sf('start','Okulun ilk günü')}${sf('b1','1. Ara tatil başlangıcı (1 hafta)',endOf('b1',7))}${sf('sem','Yarıyıl tatili başlangıcı (2 hafta)',endOf('sem',14))}${sf('b2','2. Ara tatil başlangıcı (1 hafta)',endOf('b2',7))}${sf('end','Okulun son günü')}
+ 
+ <label class="f">Plan biçimi</label><select data-s="fmt"><option value="tymm" ${s.fmt!=='sablon'?'selected':''}>TYMM biçimi (5 bölümlü, renkli – önerilen)</option><option value="sablon" ${s.fmt==='sablon'?'selected':''}>Yüklediğim örnek planın şablonu</option></select><p class="mut">TYMM biçiminde örnek günlük plan yüklemek gerekmez; yalnızca yıllık plan yeterlidir.</p>
+ <label class="f">Yapay zeka modeli</label><select data-s="model">${[...new Set([s.model,...(S.models||[]),...FALLBACK])].map(x=>`<option ${s.model===x?'selected':''}>${x}</option>`).join('')}</select><p class="row"><button class="btn" data-a="listModels">Kullanılabilir modelleri getir</button><button class="btn" data-a="testKey">Bağlantıyı test et</button></p><div class="mut" id="tres"></div></div>
+ <div class="card"><b>Google AI Studio API anahtarları</b><p class="mut">Her istekte bugün en az token kullanmış uygun anahtar seçilir. Kotası dolan anahtar bekletilir, sıradaki denenir.</p>
+ <textarea id="nk" placeholder="Anahtarları yapıştırın (her satıra bir tane)"></textarea><p><button class="btn p" data-a="addKeys">Anahtarları ekle</button></p>`
+ +S.keys.map(k=>{const i=o.indexOf(k.id);return`<div class="item"><div><code>${esc(k.key.slice(0,6))}…${esc(k.key.slice(-4))}</code> <span class="mut">· bugün ${k.tokens.toLocaleString('tr')} token · ${k.on===false?'kapalı':i>=0?'sıra '+(i+1):'bekletiliyor'}${k.last?' · '+esc(k.last):''}</span></div>
+ <div class="row"><button class="btn" data-a="togKey" data-id="${k.id}">${k.on===false?'Aç':'Kapat'}</button><button class="btn d" data-a="delKey" data-id="${k.id}">Sil</button></div></div>`}).join('')+`</div><div class="card"><b>Yedekleme</b><p class="mut">Tüm sınıflar, planlar, dosyalar, ders kitapları ve ayarlar tek bir dosyaya kaydedilir. Dosya API anahtarlarınızı da içerir; başkalarıyla paylaşmayın.</p><div class="row"><button class="btn p" data-a="backup">Yedek dosyası indir</button><label class="btn">Yedekten geri yükle<input type="file" hidden accept=".json,application/json" data-f="restore"></label></div></div>`}
+function render(){renderRail();renderMain();document.querySelectorAll('#doc .page').forEach(fitPage);
+ if(location.protocol==='content:')$('#main').insertAdjacentHTML('afterbegin','<div class="card warn">Dosya “content://” adresiyle açılmış. Bu durumda tarayıcı verileri kalıcı saklamayabilir. Dosyayı İndirilenler klasörüne kaydedip dosya yöneticisinden Chrome ile açın veya bir web adresine (örn. GitHub Pages) yükleyin.</div>')}
+
+/* ---- Olaylar ---- */
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=b.dataset.id,g=G();
+ if(a==='grade'){UI.gid=id;UI.tab='uret';UI.view=null}
+ else if(a==='settings')UI.gid='settings';
+ else if(a==='addGrade'){const n=prompt('Sınıf / ders adı (örn. 5. Sınıf Matematik)');if(!n)return;const x={id:uid(),name:n.trim(),annual:null,sample:null,book:null,sections:[],plans:[]};S.grades.push(x);UI.gid=x.id;UI.tab='dosya';save()}
+ else if(a==='rename'){const n=prompt('Yeni ad',g.name);if(!n)return;g.name=n.trim();save()}
+ else if(a==='delGrade'){if(!confirm(`“${g.name}” ve tüm planları silinsin mi?`))return;S.grades=S.grades.filter(x=>x!==g);Books.del(g.id);ttSync();UI.gid=null;save()}
+ else if(a==='tab'){UI.tab=id;UI.view=null}
+ else if(a==='shift'||a==='today'){const d=a==='today'?new Date():new Date(UI.date+'T00:00');if(a==='shift')d.setDate(d.getDate()+ +id);UI.date=iso(d);$('#dt').value=UI.date;return updWeek()}
+ else if(a==='gen'){UI.date=$('#dt').value||UI.date;UI.err='';b.disabled=true;let sec=0;STAGE='Başlıyor…';b.textContent=STAGE;
+  const tk=setInterval(()=>{sec++;b.textContent=`${STAGE} ${sec} sn`},1000);
+  try{const ps=await generate(g,UI.date,$('#note').value.trim(),$('#usebook')&&$('#usebook').checked);if(ps&&ps.length){UI.tab='planlar';UI.view=ps[0].id}}
+  catch(err){UI.err='Hata: '+err.message;toast(err.message)}
+  clearInterval(tk);b.disabled=false}
+ else if(a==='open')UI.view=id;
+ else if(a==='close')UI.view=null;
+ else if(a==='savePlan'){g.plans.find(p=>p.id===id).html=clean($('#doc').innerHTML);save();return toast('Kaydedildi.')}
+ else if(a==='backup'){const books={};for(const g of S.grades)if(g.book){const v=await Books.get(g.id);if(v)books[g.id]=v}
+  dl(new Blob([JSON.stringify({v:1,S,books})],{type:'application/json'}),'gunluk-plan-yedek-'+iso(new Date())+'.json');return}
+ else if(a==='program')UI.gid='program';
+ else if(a==='genAll'){UI.date=$('#pdt').value||UI.date;UI.err='';b.disabled=true;let ok=0;const fail=[];
+  for(const x of S.grades){if(!x.annual||(S.settings.fmt==='sablon'&&!x.sample))continue;b.textContent=x.name+' üretiliyor…';
+   try{const ps=await generate(x,UI.date,'',!!x.book);if(ps)ok+=ps.length}catch(err){fail.push(x.name+': '+err.message)}}
+  UI.err=fail.join(' | ');toast(ok+' plan üretildi.');b.disabled=false}
+ else if(a==='ttOk'){S.tt.mig=false;ttSync();save()}
+ else if(a==='resetTpl'){delete g.sample.tpl;save()}
+ else if(a==='testKey'){const k=S.keys[0],o=$('#tres');if(!k)return toast('Önce bir API anahtarı ekleyin.');o.textContent='Deneniyor…';
+  try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.settings.model}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k.key},body:JSON.stringify({contents:[{parts:[{text:'Merhaba de'}]}]})});
+   const j=await r.json();o.textContent=r.ok?'Çalışıyor. Model: '+S.settings.model:'HTTP '+r.status+' ('+S.settings.model+'): '+(j.error&&j.error.message||'').slice(0,300)}
+  catch(err){o.textContent='Bağlantı hatası: '+err.message}return}
+ else if(a==='listModels'){const k=S.keys[0];if(!k)return toast('Önce bir API anahtarı ekleyin.');
+  try{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200',{headers:{'x-goog-api-key':k.key}});const j=await r.json();
+   if(!r.ok)throw new Error(j.error?.message||r.status);
+   S.models=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/.test(m.name)&&!/image|tts|live|audio|embed|vision|exp/.test(m.name)).map(m=>m.name.replace('models/','')).sort().reverse();
+   if(S.models.length&&!S.models.includes(S.settings.model))S.settings.model=S.models[0];save();toast(S.models.length+' model bulundu. Seçili: '+S.settings.model)}
+  catch(err){toast('Model listesi alınamadı: '+err.message)}}
+ else if(a==='addSec'){const n=prompt('Şube adı (örn. 9-A)');if(!n)return;g.sections.push({id:uid(),name:n.trim(),hours:0,sched:{},slots:{},days:''});save()}
+ else if(a==='delSec'){g.sections=g.sections.filter(x=>x.id!==id);ttSync();save()}
+ else if(a==='delPlan'){if(!confirm('Bu plan silinsin mi?'))return;g.plans=g.plans.filter(p=>p.id!==id);if(UI.view===id)UI.view=null;save()}
+ else if(a==='exp'){const p=g.plans.find(x=>x.id===id);return doExport([p],`${g.name}-${p.secName?p.secName+'-':''}${p.week}-hafta`,b.dataset.f,b)}
+ else if(a==='expWeek')return doExport(g.plans.filter(p=>p.week===+id),`${g.name}-${id}-hafta-tum-subeler`,b.dataset.f,b);
+ else if(a==='expAll')return doExport(g.plans,`${g.name}-tum-planlar`,b.dataset.f,b);
+ else if(a==='delFile'){if(!confirm('Dosya silinsin mi?'))return;g[id]=null;if(id==='book')Books.del(g.id);save()}
+ else if(a==='addKeys'){const ks=$('#nk').value.split(/[\s,]+/).map(x=>x.trim()).filter(x=>x.length>20);
+  ks.forEach(k=>{if(!S.keys.some(x=>x.key===k))S.keys.push({id:uid(),key:k,tokens:0,day:iso(new Date()),on:true})});save();toast(ks.length+' anahtar işlendi.')}
+ else if(a==='togKey'){const k=S.keys.find(x=>x.id===id);k.on=k.on===false;save()}
+ else if(a==='delKey'){S.keys=S.keys.filter(x=>x.id!==id);save()}
+ render();
+});
+document.addEventListener('change',async e=>{
+ const t=e.target;
+ if(t.id==='dt'){UI.date=t.value;return updWeek()}
+ if(t.id==='pdt'){UI.date=t.value;return render()}
+ if(t.dataset.s){S.settings[t.dataset.s]=t.value;save();return render()}
+ if(t.dataset.t){G()[t.dataset.t].text=t.value;return save()}
+ if(t.dataset.ft!==undefined){G().sample.tpl.alanlar[+t.dataset.ft].tur=t.value;return save()}
+ if(t.dataset.tt){const[d,p]=t.dataset.tt.split(':').map(Number);S.tt.d[d][p]=t.value;ttSync();save();return render()}
+ if(t.dataset.ttn){const n=+t.value,T=S.tt;if(T.d.some(r=>r.slice(n).some(Boolean))&&!confirm('Saat sayısı azaltılınca son saatlerdeki dersler silinecek. Devam edilsin mi?'))return render();T.n=n;ttSync();save();return render()}
+ if(t.dataset.sn||t.dataset.sh||t.dataset.sd){const x=G().sections.find(y=>y.id===(t.dataset.sn||t.dataset.sh||t.dataset.sd));
+  if(t.dataset.sn)x.name=t.value.trim();else if(t.dataset.sh)x.hours=+t.value;else x.days=t.value.trim();save();return render()}
+ if(t.dataset.f==='restore'&&t.files[0]){
+  try{const j=JSON.parse(await t.files[0].text());if(!j.S||!j.S.grades)throw new Error('Geçersiz yedek dosyası.');
+   if(!confirm('Mevcut tüm veriler yedekteki verilerle değiştirilsin mi?'))return;
+   S=j.S;S.settings=Object.assign({school:'',teacher:'',teacherTitle:'',principal:'',principalTitle:'Okul Müdürü',fmt:'tymm',start:'',end:'',b1:'',sem:'',b2:'',model:'gemini-3.8-flash'},S.settings);
+   S.keys=S.keys||[];S.grades.forEach(g=>{g.sections=g.sections||[];g.plans=g.plans||[]});ttInit();
+   for(const id in (j.books||{}))await Books.set(id,j.books[id]);
+   save();UI.gid=null;toast('Yedek geri yüklendi.');render()}catch(err){toast(err.message)}return}
+ if(t.dataset.f==='book'&&t.files[0]){const f=t.files[0];
+  try{if(!/\.pdf$/i.test(f.name))throw new Error('Ders kitabı PDF olmalı.');
+   const pages=await pdfPages(f,(i,n)=>toast(`Kitap okunuyor… ${i}/${n} sayfa`));
+   if(pages.join('').trim().length<200)throw new Error('Kitaptan metin okunamadı (taranmış görüntü olabilir).');
+   const mode=await Books.set(G().id,{name:f.name,pages});G().book={name:f.name,n:pages.length};save();toast(mode==='mem'?'Kitap yalnızca bu oturumda tutuluyor (tarayıcı depolamaya izin vermiyor); sayfayı kapatınca silinir.':'Ders kitabı kaydedildi.');render()}catch(err){toast(err.message)}return}
+ if(t.dataset.f&&t.files[0]){const f=t.files[0];toast('Dosya okunuyor…');
+  try{const text=(await readDoc(f)).trim();if(text.length<30)throw new Error('Dosyadan metin okunamadı (taranmış görüntü olabilir).');
+   const o={name:f.name,text};
+   if(t.dataset.f==='sample'){
+    if(/\.docx$/i.test(f.name))o.html=(await mammoth.convertToHtml({arrayBuffer:await f.arrayBuffer()})).value.replace(/<img[^>]*>/g,'');
+    else if(f.size<1.5e6)o.b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result).split(',')[1]);fr.readAsDataURL(f)})}
+   G()[t.dataset.f]=o;save();toast('Dosya kaydedildi.');render()}catch(err){toast(err.message)}}
+});
+try{navigator.storage.persist()}catch(e){}
+S.grades.forEach(g=>{g.plans=g.plans||[]});ttInit();
+render();
+</script></body></html>
